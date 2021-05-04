@@ -1,13 +1,13 @@
-import { expect as expectCDK, matchTemplate, MatchStyle } from '@aws-cdk/assert';
+import {expect as expectCDK, MatchStyle, matchTemplate} from '@aws-cdk/assert';
 import * as cdk from '@aws-cdk/core';
-import * as BdBackendTs from '../lib/bd-backend-ts-stack';
+import {ApiStack} from '../stacks/api-stack';
 
 test('Empty Stack', () => {
     const app = new cdk.App();
     // WHEN
-    const stack = new BdBackendTs.BdBackendTsStack(app, 'MyTestStack');
+    const stack = new ApiStack(app, 'MyTestStack');
     // THEN
     expectCDK(stack).to(matchTemplate({
-      "Resources": {}
+        "Resources": {}
     }, MatchStyle.EXACT))
 });

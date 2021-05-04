@@ -1,0 +1,38 @@
+language: node_js
+node_js:
+  - node
+
+branches:
+  only:
+    - develop
+    - master
+
+cache:
+  directories:
+    - "node_modules"
+
+install:
+  - npm i -g aws-cdk typescript
+
+script: skip
+
+jobs:
+  include:
+    - stage: dev
+      if: branch = "develop"
+      env:
+        - STAGE=dev
+      deploy:
+        provider: script
+        script: npm ci && cdk bootstrap --bootstrap-bucket-name "bd-backend-bucket-${STAGE}" && cdk deploy
+        on:
+          branch: develop
+    - stage: prod
+      if: branch = "master"
+      env:
+        - STAGE=prod
+      deploy:
+        provider: script
+        script: npm ci && cdk bootstrap --bootstrap-bucket-name "bd-backend-bucket-${STAGE}" && cdk deploy
+        on:
+          branch: master
