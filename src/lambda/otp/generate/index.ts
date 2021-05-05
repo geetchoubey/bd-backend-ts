@@ -2,7 +2,7 @@ import {Context} from "aws-lambda";
 
 export const handler = async (event: any, context: Context) => {
     return {
-        message: 'Created requirement',
+        message: 'Generated OTP',
         statusCode: 0
-    }
+    };
 };

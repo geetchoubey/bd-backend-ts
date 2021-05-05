@@ -7,7 +7,7 @@ export class ApiStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps) {
         super(scope, id, props);
         this.api = new RestApi(this, 'apigw', {
-            restApiName: `bd-backend-api-${process.env.STAGE}`,
+            restApiName: `bd-ts-backend-api-${process.env.STAGE}`,
             defaultCorsPreflightOptions: {
                 allowOrigins: Cors.ALL_ORIGINS,
                 allowHeaders: [...Cors.DEFAULT_HEADERS, 'Authorization', 'X-API-Key'],

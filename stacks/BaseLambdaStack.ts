@@ -1,9 +1,28 @@
 import {Construct, NestedStack} from '@aws-cdk/core';
 import {LambdaStackProps} from "./interfaces";
-import {LambdaIntegration, Method, PassthroughBehavior, Resource, RestApi} from "@aws-cdk/aws-apigateway";
+import {
+    LambdaIntegration,
+    Method,
+    Model,
+    PassthroughBehavior,
+    RequestValidator,
+    Resource,
+    RestApi
+} from "@aws-cdk/aws-apigateway";
 import {NodejsFunction, NodejsFunctionProps} from "@aws-cdk/aws-lambda-nodejs";
 import {IFunction, Runtime} from "@aws-cdk/aws-lambda";
-import {MethodOptions} from "@aws-cdk/aws-apigateway/lib/method";
+
+const statuses: { [index: string]: string; } = {
+    "200": "",
+    "400": "[\\s\\S]*\\[400\][\\s\\S]*",
+    "401": "[\\s\\S]*\\[401\\][\\s\\S]*",
+    "403": "[\\s\\S]*\\[403\\][\\s\\S]*",
+    "404": "[\\s\\S]*\\[404\\][\\s\\S]*",
+    "422": "[\\s\\S]*\\[422\\][\\s\\S]*",
+    "500": "[\\s\\S]*(Process\\s?exited\\s?before\\s?completing\\s?request|\\[500\\])[\\s\\S]*",
+    "502": "[\\s\\S]*\\[502\\][\\s\\S]*",
+    "504": "([\\s\\S]*\\[504\\][\\s\\S]*)|(^[Task timed out].*)"
+}
 
 const requestMapper: string = `{
     "body": $input.json('$'),
@@ -53,7 +72,7 @@ export abstract class BaseLambdaStack extends NestedStack {
         return this.restApi.root.addResource(pathPart);
     }
 
-    addMethod(resource: Resource, handler: IFunction, httpMethod: string, options?: MethodOptions) {
+    addMethod(resource: Resource, handler: IFunction, httpMethod: string, requestValidatorName: string, model: Model) {
         this.methods.push(
             resource.addMethod(
                 httpMethod,
@@ -63,9 +82,40 @@ export abstract class BaseLambdaStack extends NestedStack {
                         passthroughBehavior: PassthroughBehavior.NEVER,
                         requestTemplates: {
                             'application/json': requestMapper
-                        }
+                        },
+                        integrationResponses: Object.keys(statuses).map(status => ({
+                            statusCode: status,
+                            selectionPattern: statuses[status],
+                            responseParameters: {
+                                "method.response.header.Access-Control-Allow-Headers":
+                                    "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+                                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                                // "method.response.header.Access-Control-Allow-Credentials":
+                                //     "'false'",
+                                "method.response.header.Access-Control-Allow-Methods":
+                                    "'OPTIONS,GET,PUT,POST,DELETE'",
+                            }
+                        }))
                     }),
-                options)
+                {
+                    requestValidator: new RequestValidator(this, requestValidatorName, {
+                        restApi: this.restApi,
+                        requestValidatorName: `${requestValidatorName}-${process.env.STAGE}`,
+                        validateRequestBody: true
+                    }),
+                    requestModels: {
+                        'application/json': model
+                    },
+                    methodResponses: Object.keys(statuses).map(status => ({
+                        statusCode: status,
+                        responseParameters: {
+                            "method.response.header.Access-Control-Allow-Headers": true,
+                            "method.response.header.Access-Control-Allow-Methods": true,
+                            // "method.response.header.Access-Control-Allow-Credentials": true,
+                            "method.response.header.Access-Control-Allow-Origin": true,
+                        }
+                    }))
+                })
         )
     }
 }

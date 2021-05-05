@@ -1,7 +1,6 @@
 import {Construct} from "@aws-cdk/core";
 import {LambdaStackProps} from "./interfaces";
 import {BaseLambdaStack} from "./BaseLambdaStack";
-import {RequestValidator} from "@aws-cdk/aws-apigateway";
 import models from "./models";
 
 export class RequirementStack extends BaseLambdaStack {
@@ -10,20 +9,12 @@ export class RequirementStack extends BaseLambdaStack {
         super(scope, id, props);
         const createRequirementFunction = this.getNodeJSFunction('create-requirement', {
             handler: 'handler',
+            functionName: `bd-ts-create-requirement-${process.env.STAGE}`,
             entry: 'src/lambda/requirement/create/index.ts'
         });
 
         let resource = this.createResource(createRequirementFunction, 'requirement');
         this.addMethod(resource, createRequirementFunction, 'POST',
-            {
-                requestValidator: new RequestValidator(this, 'create-requirement-validator', {
-                    restApi: this.restApi,
-                    requestValidatorName: `create-requirement-validator-${process.env.STAGE}`,
-                    validateRequestBody: true
-                }),
-                requestModels: {
-                    'application/json': models(this, this.restApi).createRequirementModel()
-                }
-            });
+            'create-requirement-validator', models(this, this.restApi).createRequirementModel())
     }
 }

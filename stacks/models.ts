@@ -1,6 +1,7 @@
 import {JsonSchemaType, Model, RestApi} from "@aws-cdk/aws-apigateway";
 import {BLOOD_TYPES} from "../src/utils/constants";
 import {Construct} from "@aws-cdk/core";
+
 export default (scope: Construct, restApi: RestApi) => ({
     createRequirementModel(): Model {
         return new Model(scope, 'create-request-model', {
@@ -46,6 +47,23 @@ export default (scope: Construct, restApi: RestApi) => ({
                     }
                 },
                 required: ["firstName", "lastName", "phone", "email", "bloodType", "doctorRegistrationId", "quantity", "cityId", "otp"]
+            }
+        })
+    },
+    generateOtpInputModel(): Model {
+        return new Model(scope, 'otp-input-model', {
+            modelName: `OtpRequestModel${process.env.STAGE}`,
+            restApi: restApi,
+            contentType: 'application/json',
+            schema: {
+                type: JsonSchemaType.OBJECT,
+                properties: {
+                    phone: {
+                        type: JsonSchemaType.STRING,
+                        pattern: "^\\d{10}$"
+                    }
+                },
+                required: ['phone']
             }
         })
     }
